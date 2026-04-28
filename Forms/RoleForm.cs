@@ -36,11 +36,7 @@ namespace InsuranceApp.Forms
             btnUser.Text = "Пользователь";
             btnUser.Location = new Point(80, 110);
             btnUser.Size = new Size(140, 30);
-            btnUser.Click += (s, e) =>
-            {
-                var userMenu = new UserMenuForm();
-                userMenu.ShowDialog();
-            };
+            btnUser.Click += (s, e) => OpenUserMenu();
             Controls.Add(btnUser);
         }
 
@@ -54,6 +50,21 @@ namespace InsuranceApp.Forms
                     mainForm.Show();
                     this.Hide();
                 }
+            }
+        }
+
+        private void OpenUserMenu()
+        {
+            var loginForm = new LoginForm();
+            if (loginForm.ShowDialog() == DialogResult.OK)
+            {
+                var userMenu = new UserMenuForm(
+                    loginForm.ЛогинПользователя,
+                    loginForm.ФИОПользователя,
+                    loginForm.РольПользователя,
+                    loginForm.ТелефонПользователя
+                );
+                userMenu.ShowDialog();
             }
         }
     }
@@ -101,7 +112,7 @@ namespace InsuranceApp.Forms
 
         private void ValidatePassword()
         {
-            if (tbPassword.Text == "123")
+            if (tbPassword.Text == "admin123")
             {
                 DialogResult = DialogResult.OK;
                 Close();

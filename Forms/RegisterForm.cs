@@ -7,10 +7,11 @@ namespace InsuranceApp.Forms
 {
     public class RegisterForm : Form
     {
+        private TextBox tbFio = new();
+        private TextBox tbPhone = new();
         private TextBox tbLogin = new();
         private TextBox tbPassword = new();
         private TextBox tbConfirmPassword = new();
-        private TextBox tbFio = new();
         private Button btnRegister = new();
         private Button btnCancel = new();
         private Label lblMessage = new();
@@ -20,7 +21,7 @@ namespace InsuranceApp.Forms
         public RegisterForm()
         {
             Text = "Регистрация нового пользователя";
-            Size = new Size(400, 300);
+            Size = new Size(400, 350);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -40,10 +41,24 @@ namespace InsuranceApp.Forms
                 AutoSize = true,
                 Font = new Font("Arial", 9)
             };
-            tbFio.Location = new Point(120, yPos);
-            tbFio.Size = new Size(240, 20);
+            tbFio.Location = new Point(150, yPos);
+            tbFio.Size = new Size(200, 20);
             Controls.Add(lblFio);
             Controls.Add(tbFio);
+
+            yPos += 40;
+
+            var lblPhone = new Label
+            {
+                Text = "Телефон:",
+                Location = new Point(20, yPos),
+                AutoSize = true,
+                Font = new Font("Arial", 9)
+            };
+            tbPhone.Location = new Point(150, yPos);
+            tbPhone.Size = new Size(200, 20);
+            Controls.Add(lblPhone);
+            Controls.Add(tbPhone);
 
             yPos += 40;
 
@@ -54,8 +69,8 @@ namespace InsuranceApp.Forms
                 AutoSize = true,
                 Font = new Font("Arial", 9)
             };
-            tbLogin.Location = new Point(120, yPos);
-            tbLogin.Size = new Size(240, 20);
+            tbLogin.Location = new Point(150, yPos);
+            tbLogin.Size = new Size(200, 20);
             Controls.Add(lblLogin);
             Controls.Add(tbLogin);
 
@@ -68,8 +83,8 @@ namespace InsuranceApp.Forms
                 AutoSize = true,
                 Font = new Font("Arial", 9)
             };
-            tbPassword.Location = new Point(120, yPos);
-            tbPassword.Size = new Size(240, 20);
+            tbPassword.Location = new Point(150, yPos);
+            tbPassword.Size = new Size(200, 20);
             tbPassword.PasswordChar = '*';
             Controls.Add(lblPassword);
             Controls.Add(tbPassword);
@@ -83,7 +98,7 @@ namespace InsuranceApp.Forms
                 AutoSize = true,
                 Font = new Font("Arial", 9)
             };
-            tbConfirmPassword.Location = new Point(160, yPos);
+            tbConfirmPassword.Location = new Point(150, yPos);
             tbConfirmPassword.Size = new Size(200, 20);
             tbConfirmPassword.PasswordChar = '*';
             Controls.Add(lblConfirmPassword);
@@ -91,15 +106,15 @@ namespace InsuranceApp.Forms
 
             yPos += 50;
 
-            btnRegister.Text = "Зарегистрировать";
-            btnRegister.Location = new Point(60, yPos);
+            btnRegister.Text = "Зарегистрироваться";
+            btnRegister.Location = new Point(80, yPos);
             btnRegister.Size = new Size(120, 30);
             btnRegister.BackColor = Color.LightGreen;
             btnRegister.Click += (s, e) => Register();
 
             btnCancel.Text = "Отмена";
-            btnCancel.Location = new Point(200, yPos);
-            btnCancel.Size = new Size(120, 30);
+            btnCancel.Location = new Point(220, yPos);
+            btnCancel.Size = new Size(80, 30);
             btnCancel.BackColor = Color.LightCoral;
             btnCancel.Click += (s, e) => DialogResult = DialogResult.Cancel;
 
@@ -119,6 +134,12 @@ namespace InsuranceApp.Forms
             if (string.IsNullOrWhiteSpace(tbFio.Text))
             {
                 lblMessage.Text = "Введите ФИО";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(tbPhone.Text))
+            {
+                lblMessage.Text = "Введите телефон";
                 return;
             }
 
@@ -148,7 +169,17 @@ namespace InsuranceApp.Forms
 
             try
             {
-                DatabaseService.ЗарегистрироватьПользователя(tbLogin.Text.Trim(), tbPassword.Text, tbFio.Text.Trim());
+                DatabaseService.ЗарегистрироватьПользователя(
+                    tbLogin.Text.Trim(),
+                    tbPassword.Text,
+                    tbFio.Text.Trim(),
+                    tbPhone.Text.Trim(),
+                    "user"
+                );
+                
+                MessageBox.Show("Регистрация прошла успешно! Теперь вы можете войти в систему.", 
+                    "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                
                 DialogResult = DialogResult.OK;
                 Close();
             }

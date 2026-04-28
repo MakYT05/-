@@ -13,13 +13,15 @@ namespace InsuranceApp.Forms
         private Button btnRegister = new();
         private Label lblMessage = new();
 
+        public string ЛогинПользователя { get; private set; } = "";
         public string РольПользователя { get; private set; } = "";
         public string ФИОПользователя { get; private set; } = "";
+        public string ТелефонПользователя { get; private set; } = "";
 
         public LoginForm()
         {
             Text = "Вход в систему страхования";
-            Size = new Size(400, 300);
+            Size = new Size(500, 400);
             StartPosition = FormStartPosition.CenterScreen;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -72,7 +74,7 @@ namespace InsuranceApp.Forms
             btnLogin.Click += (s, e) => Login();
 
             btnRegister.Text = "Регистрация";
-            btnRegister.Location = new Point(200, 170);
+            btnRegister.Location = new Point(300, 170);
             btnRegister.Size = new Size(100, 35);
             btnRegister.BackColor = Color.LightBlue;
             btnRegister.Font = new Font("Arial", 10);
@@ -103,8 +105,11 @@ namespace InsuranceApp.Forms
             
             if (result.успех)
             {
+                ЛогинПользователя = tbLogin.Text.Trim();
                 РольПользователя = result.роль;
                 ФИОПользователя = result.фио;
+                ТелефонПользователя = result.телефон;
+                
                 DialogResult = DialogResult.OK;
                 Close();
             }

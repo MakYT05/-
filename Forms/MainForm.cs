@@ -4,6 +4,7 @@ using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
 using InsuranceApp.Services;
+using OfficeOpenXml;
 
 namespace InsuranceApp.Forms
 {
@@ -22,6 +23,7 @@ namespace InsuranceApp.Forms
         private Button btnRequests = new();
         private Button btnViewBookings = new();
         private Button btnManageUsers = new();
+        private Button btnExportToExcel = new();
 
         public MainForm()
         {
@@ -136,6 +138,9 @@ namespace InsuranceApp.Forms
             btnRequests.Text = "Посмотреть заявки"; 
             btnRequests.BackColor = Color.LightBlue;
             btnRequests.Size = new Size(120, 30);
+            btnManageUsers.Text = "Управление пользователями";
+            btnManageUsers.BackColor = Color.LightGoldenrodYellow;
+            btnManageUsers.Size = new Size(150, 30);
 
             btnAddPolicy.Click += (s, e) => AddPolicy();
             btnDeletePolicy.Click += (s, e) => DeletePolicy();
@@ -145,7 +150,9 @@ namespace InsuranceApp.Forms
                 reqForm.ЗаявкаПринята += () => LoadData();
                 reqForm.ShowDialog();
             };
-            panelPolicyBtns.Controls.AddRange(new Control[] { btnAddPolicy, btnDeletePolicy, btnRequests });
+            btnManageUsers.Click += (s, e) => ManageUsers();
+            
+            panelPolicyBtns.Controls.AddRange(new Control[] { btnAddPolicy, btnDeletePolicy, btnRequests, btnManageUsers });
 
             var panelBookingBtns = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 40 };
             btnViewBookings.Text = "Посмотреть бронь"; 
@@ -170,11 +177,11 @@ namespace InsuranceApp.Forms
             layout.Controls.Add(panelPolicies, 1, 0);
             layout.SetRowSpan(panelPolicies, 2);
 
-            btnManageUsers.Text = "Управление пользователями";
-            btnManageUsers.BackColor = Color.LightGoldenrodYellow;
-            btnManageUsers.Size = new Size(150, 30);
-            btnManageUsers.Click += (s, e) => ManageUsers();
-            panelPolicyBtns.Controls.Add(btnManageUsers);
+            btnExportToExcel.Text = "📊 Отчет Excel";
+            btnExportToExcel.BackColor = Color.FromArgb(46, 204, 113);
+            btnExportToExcel.Size = new Size(120, 30);
+            btnExportToExcel.Click += (s, e) => ExportToExcel();
+            panelPolicyBtns.Controls.Add(btnExportToExcel);
 
             Controls.Add(layout);
         }
@@ -205,12 +212,12 @@ namespace InsuranceApp.Forms
 
         private void LoadData()
         {
-            gridКлиенты.DataSource = DatabaseService.ПолучитьКлиентов();
-            gridИмущество.DataSource = DatabaseService.ПолучитьИмущество();
+            gridКлиенты.DataSource = DatabaseService.GetClients();
+            gridИмущество.DataSource = DatabaseService.GetProperties();
 
-            var клиенты = DatabaseService.ПолучитьКлиентов();
-            var имущество = DatabaseService.ПолучитьИмущество();
-            var полисы = DatabaseService.ПолучитьПолисы();
+            var клиенты = DatabaseService.GetClients();
+            var имущество = DatabaseService.GetProperties();
+            var полисы = DatabaseService.GetPolicies();
 
             var data = полисы.Select(p => new
             {
@@ -227,6 +234,31 @@ namespace InsuranceApp.Forms
             gridПолисы.DataSource = data;
         }
 
+        private void ExportToExcel()
+        {
+            try
+            {
+                using (SaveFileDialog saveDialog = new SaveFileDialog())
+                {
+                    saveDialog.Filter = "Excel Files|*.xlsx";
+                    saveDialog.Title = "Сохранить отчет";
+                    saveDialog.FileName = $"Отчет_{DateTime.Now:yyyyMMdd_HHmm}.xlsx";
+
+                    if (saveDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        string filePath = ExcelReportService.CreateReport(saveDialog.FileName);
+                        MessageBox.Show($"Отчет успешно создан!\nСохранен в: {filePath}", 
+                            "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при создании отчета: {ex.Message}", 
+                    "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
         private void AddClient()
         {
             var form = new InputForm("ФИО клиента:", "Телефон:");
@@ -234,17 +266,13 @@ namespace InsuranceApp.Forms
             {
                 try
                 {
-                    DatabaseService.ДобавитьКлиента(form.Input1.Trim(), form.Input2.Trim());
+                    DatabaseService.AddClient(form.Input1.Trim(), form.Input2.Trim());
                     LoadData();
-                    MessageBox.Show("Клиент успешно добавлен!", "Успех", 
-                                  MessageBoxButtons.OK, 
-                                  MessageBoxIcon.Information);
+                    MessageBox.Show("Клиент успешно добавлен!", "Успех");
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Ошибка при добавлении клиента: {ex.Message}", "Ошибка", 
-                                  MessageBoxButtons.OK, 
-                                  MessageBoxIcon.Error);
+                    MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка");
                 }
             }
         }
@@ -253,19 +281,17 @@ namespace InsuranceApp.Forms
         {
             if (gridКлиенты.SelectedRows.Count == 0)
             {
-                MessageBox.Show("Выберите клиента для удаления - щелкните по строке в таблице");
+                MessageBox.Show("Выберите клиента");
                 return;
             }
 
             var id = (int)gridКлиенты.SelectedRows[0].Cells["Id"].Value;
-            var фио = gridКлиенты.SelectedRows[0].Cells["ФИО"].Value.ToString();
             
-            if (MessageBox.Show($"Удалить клиента: {фио}?", "Подтверждение удаления",
-                MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            if (MessageBox.Show("Удалить клиента?", "Подтверждение",
+                MessageBoxButtons.YesNo) == DialogResult.Yes)
             {
-                DatabaseService.УдалитьКлиента(id);
+                DatabaseService.DeleteClient(id);
                 LoadData();
-                MessageBox.Show("Клиент удален!");
             }
         }
 
@@ -276,22 +302,17 @@ namespace InsuranceApp.Forms
             {
                 try
                 {
-                    string тип = form.GetPropertyType();
-                    decimal стоимость = decimal.Parse(form.Input1);
-                    string адрес = form.Input2;
+                    string тип = form.Input1;
+                    decimal стоимость = decimal.Parse(form.Input2);
+                    string адрес = form.Input3;
 
-                    DatabaseService.ДобавитьИмущество(тип, стоимость, адрес);
+                    DatabaseService.AddProperty(тип, стоимость, адрес);
                     LoadData();
-                    MessageBox.Show("Имущество успешно добавлено!", "Успех", 
-                                  MessageBoxButtons.OK, 
-                                  MessageBoxIcon.Information);
+                    MessageBox.Show("Имущество добавлено!", "Успех");
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Ошибка при добавлении имущества: {ex.Message}", 
-                                  "Ошибка", 
-                                  MessageBoxButtons.OK, 
-                                  MessageBoxIcon.Error);
+                    MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка");
                 }
             }
         }
@@ -300,27 +321,24 @@ namespace InsuranceApp.Forms
         {
             if (gridИмущество.SelectedRows.Count == 0)
             {
-                MessageBox.Show("Выберите имущество для удаления - щелкните по строке в таблице");
+                MessageBox.Show("Выберите имущество");
                 return;
             }
 
             var id = (int)gridИмущество.SelectedRows[0].Cells["Id"].Value;
-            var тип = gridИмущество.SelectedRows[0].Cells["Тип"].Value.ToString();
-            var адрес = gridИмущество.SelectedRows[0].Cells["Адрес"].Value.ToString();
             
-            if (MessageBox.Show($"Удалить имущество: {тип} ({адрес})?", "Подтверждение удаления",
-                MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            if (MessageBox.Show("Удалить имущество?", "Подтверждение",
+                MessageBoxButtons.YesNo) == DialogResult.Yes)
             {
-                DatabaseService.УдалитьИмущество(id);
+                DatabaseService.DeleteProperty(id);
                 LoadData();
-                MessageBox.Show("Имущество удалено!");
             }
         }
 
         private void AddPolicy()
         {
-            var клиенты = DatabaseService.ПолучитьКлиентов();
-            var имущество = DatabaseService.ПолучитьИмущество();
+            var клиенты = DatabaseService.GetClients();
+            var имущество = DatabaseService.GetProperties();
             
             if (!клиенты.Any())
             {
@@ -332,32 +350,32 @@ namespace InsuranceApp.Forms
                 MessageBox.Show("Сначала добавьте имущество!");
                 return;
             }
-        
+
             try
             {
                 var clientForm = new SelectForm("Выберите клиента:", клиенты.Select(c => c.ФИО).ToArray());
                 if (clientForm.ShowDialog() != DialogResult.OK) return;
                 var клиентId = клиенты[clientForm.SelectedIndex].Id;
-        
+
                 var propertyForm = new SelectForm("Выберите имущество:", 
-                    имущество.Select(p => $"{p.Тип} ({p.Адрес}) - {p.Стоимость:C}").ToArray());
+                    имущество.Select(p => $"{p.Тип} ({p.Адрес})").ToArray());
                 if (propertyForm.ShowDialog() != DialogResult.OK) return;
                 var имуществоId = имущество[propertyForm.SelectedIndex].Id;
-        
+
                 var form = new InputForm("Премия:", "Срок (дней):");
                 if (form.ShowDialog() == DialogResult.OK)
                 {
                     decimal премия = decimal.Parse(form.Input1);
                     int срок = int.Parse(form.Input2);
-        
-                    DatabaseService.ДобавитьПолис(клиентId, имуществоId, премия, DateTime.Today, DateTime.Today.AddDays(срок));
+
+                    DatabaseService.AddPolicy(клиентId, имуществоId, премия, DateTime.Today, DateTime.Today.AddDays(срок));
                     LoadData();
-                    MessageBox.Show("Полис успешно добавлен!", "Успех");
+                    MessageBox.Show("Полис добавлен!", "Успех");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка при добавлении полиса: {ex.Message}", "Ошибка");
+                MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка");
             }
         }
 
@@ -365,20 +383,17 @@ namespace InsuranceApp.Forms
         {
             if (gridПолисы.SelectedRows.Count == 0)
             {
-                MessageBox.Show("Выберите полис для удаления - щелкните по строке в таблице");
+                MessageBox.Show("Выберите полис");
                 return;
             }
 
             var id = (int)gridПолисы.SelectedRows[0].Cells["Id"].Value;
-            var клиент = gridПолисы.SelectedRows[0].Cells["Клиент"].Value.ToString();
-            var имущество = gridПолисы.SelectedRows[0].Cells["ЧтоСтрахуем"].Value.ToString();
             
-            if (MessageBox.Show($"Удалить полис: {клиент} - {имущество}?", "Подтверждение удаления",
-                MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            if (MessageBox.Show("Удалить полис?", "Подтверждение",
+                MessageBoxButtons.YesNo) == DialogResult.Yes)
             {
-                DatabaseService.УдалитьПолис(id);
+                DatabaseService.DeletePolicy(id);
                 LoadData();
-                MessageBox.Show("Полис удален!");
             }
         }
 

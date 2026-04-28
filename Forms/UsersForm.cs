@@ -62,7 +62,7 @@ namespace InsuranceApp.Forms
 
         private void LoadData()
         {
-            var users = DatabaseService.ПолучитьПользователей();
+            var users = DatabaseService.GetUsers();
             gridUsers.DataSource = users;
             
             if (gridUsers.Columns.Count > 0)
